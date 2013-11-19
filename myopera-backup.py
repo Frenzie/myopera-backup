@@ -34,11 +34,15 @@ counter = 111 # regular old public forum
 #test for HTML entity parsing
 #counter = 14782702
 #test for private groups
-#counter = 14951902
+counter = 14951902
 #test for comment that does not exist
 #counter = 14951903
 
-
+def log(message):
+	logfile = open('myopera-backup.log', 'a') #a for append
+	logfile.write(message + '\n')
+	logfile.close()
+	
 # Shortcut for sleep
 # We don't want to get banned from the server, but we also don't want to take forever. 0.2 is probably too little but let's give it a try
 def wait():
@@ -104,6 +108,8 @@ for comment_id in range(counter, counter + 2):
 	# Skip this iteration if the comment doesn't exist
 	if header_request.ok is False:
 		print('Skipping '+comment_id+'. Does not exist on server.')
+		# Write failure to log file.
+		log(comment_id + ' skipped. Does not exist on server.')
 		continue
 
 	# findpost.pl redirects, find out where
@@ -129,8 +135,9 @@ for comment_id in range(counter, counter + 2):
 	# True if HTTP status 200; False for e.g. 401 or 404. Maybe check actual error codes and raise an alarm if it's not 401 or 404? Or write some kind of error log under else?
 	# Anyhoo, skip this iteration if False, because then we don't have read access.
 	if quote_request.ok is False:
-		#write failure to log file?
 		print('Skipping '+comment_id+'. Authorization or other problem.')
+		# Write failure to log file.
+		log(comment_id + ' skipped. Authorization or other problem.')
 		continue
 	
 	quote_page = quote_request.text
@@ -194,6 +201,7 @@ for comment_id in range(counter, counter + 2):
 	
 	#write post backup file
 	comment_file = open(comment_file_name, 'w')
+	
 	comment_file.write(comment_id + '\n')
 	comment_file.write(user + '\n')
 	comment_file.write(timestamp + '\n')
@@ -205,6 +213,8 @@ for comment_id in range(counter, counter + 2):
 	comment_file.write(topic_id + '\n')
 	comment_file.write('\n')
 	comment_file.write(post_text)
+	
+	comment_file.close() 
 	
 	
 	
