@@ -68,7 +68,7 @@ for comment_id_int in range(counter, counter + 1000):
 
 	import math
 
-	hundred_thousands = math.floor(counter/100000)
+	hundred_thousands = math.floor(comment_id_int/100000)
 	hundred_thousands_next = hundred_thousands + 1
 	hundred_thousands *= 100000
 	hundred_thousands_next *= 100000
@@ -76,7 +76,7 @@ for comment_id_int in range(counter, counter + 1000):
 
 	hundred_thousands_dir = backup_directory + '/' + str(hundred_thousands)+'-'+str(hundred_thousands_next)
 
-	thousands = math.floor( (counter - hundred_thousands) / 1000 )
+	thousands = math.floor( (comment_id_int - hundred_thousands) / 1000 )
 	thousands_next = thousands + 1
 	thousands *= 1000
 	thousands_next *= 1000
