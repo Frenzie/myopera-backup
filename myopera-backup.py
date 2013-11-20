@@ -153,7 +153,7 @@ for comment_id_int in range(counter, counter + 1000):
 	#print(topic_title)
 	
 	# re.DOTALL makes dot also match newlines
-	post = re.search(r'<textarea name="comment" id="postcontent" rows="20" cols="60">\[quote=([\w]+)](.+?)\[/quote] </textarea>', quote_page, re.DOTALL)
+	post = re.search(r'<textarea name="comment" id="postcontent" rows="20" cols="60">\[quote=([\w-]+)](.+?)\[/quote] </textarea>', quote_page, re.DOTALL)
 	user = post.group(1)
 	post_text = post.group(2)
 	
