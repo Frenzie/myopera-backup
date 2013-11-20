@@ -21,7 +21,7 @@ config_file = 'myopera-backup.ini'
 backup_directory = 'backup-data'
 
 config = configparser.ConfigParser()
-config.read([os.path.expanduser(config_file)])
+config.read(config_file)
 user = config.get('DEFAULT', 'user')
 password = config.get('DEFAULT', 'password')
 counter = config.getint('DEFAULT', 'counter')
@@ -30,11 +30,11 @@ counter = config.getint('DEFAULT', 'counter')
 credentials = user, password
 
 # Read counter file to resume from last time.
-counter = 111 # regular old public forum
+#counter = 111 # regular old public forum
 #test for HTML entity parsing
 #counter = 14782702
 #test for private groups
-counter = 14951902
+#counter = 14951902
 #test for comment that does not exist
 #counter = 14951903
 
@@ -50,10 +50,9 @@ def wait():
 
 # start for loop here, from counter up to ???
 # just three files for a first test
-for comment_id in range(counter, counter + 2):
-	# more logical variable name; also we need a string for concatenating
-	#comment_id = str(counter)
-	comment_id = str(comment_id)
+for comment_id_int in range(counter, counter + 1000):
+	# we need a string for concatenating
+	comment_id = str(comment_id_int)
 	
 	print('Processing comment '+comment_id+'.')
 	
@@ -185,15 +184,15 @@ for comment_id in range(counter, counter + 2):
 	# write post file
 	# format something simple and logical, e.g.
 	'''
-	user
 	comment_id
+	user
 	timestamp
-	forum_category_id
 	forum_category
-	forum_id
+	forum_category_id
 	forum_name
-	topic_id
+	forum_id
 	topic_title
+	topic_id
 
 	post_text
 	'''
@@ -216,25 +215,9 @@ for comment_id in range(counter, counter + 2):
 	
 	comment_file.close() 
 	
-	
-	
-	
 	# write counter file
-	# we apparently can't trust configparser's write function because it uses dictionaries, so we simply replace line 4 or something
-	#f = open('test.ini', 'w'); f.write('blabla')
-	# maybe try this http://stackoverflow.com/questions/1877999/delete-final-line-in-file-via-python
-	
-	'''
-	readFile = open(config_file)
-
-	lines = readFile.readlines()
-
-	readFile.close()
-	w = open("file",'w')
-
-	w.writelines([item for item in lines[:-1]])
-
-	w.close()
-	'''
-	
-	#counter+=1
+	comment_id_int += 1 #need to start from one higher next time
+	comment_id = str(comment_id_int)
+	config.set('DEFAULT', 'counter', comment_id)
+	with open(config_file, 'w') as cf:
+		config.write(cf)
