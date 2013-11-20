@@ -50,7 +50,7 @@ def wait():
 
 # start for loop here, from counter up to ???
 # just three files for a first test
-for comment_id_int in range(counter, counter + 1000):
+for comment_id_int in range(counter, counter + 100000):
 	# we need a string for concatenating
 	comment_id = str(comment_id_int)
 	
@@ -154,6 +154,15 @@ for comment_id_int in range(counter, counter + 1000):
 	
 	# re.DOTALL makes dot also match newlines
 	post = re.search(r'<textarea name="comment" id="postcontent" rows="20" cols="60">\[quote=(.+?)](.+?)\[/quote] </textarea>', quote_page, re.DOTALL)
+	
+	post_missing = re.search(r'<textarea name="comment" id="postcontent" rows="20" cols="60"></textarea>', quote_page, re.DOTALL)
+	
+	if post is None and post_missing:
+		print('Skipping '+comment_id+'. Quoting malfunctioned on server.')
+		# Write failure to log file.
+		log(comment_id + ' skipped. Quoting problem on server.')
+		continue
+	
 	user = post.group(1)
 	post_text = post.group(2)
 	
