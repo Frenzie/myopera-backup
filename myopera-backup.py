@@ -39,7 +39,7 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
-counter_range = counter + 100000
+counter_range = counter + 14000000
 #counter_range = counter+2
 
 def getCommentFileName(comment_id_int):
@@ -133,7 +133,7 @@ for comment_id_int in range(counter, counter_range):
 	#print(topic_id)
 
 	metadata_regex = r'''
-<h1>(.+?)</h1>
+<h1>(.*?)</h1>
 <p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a href="/community/forums/tgr.dml\?id=([0-9]+)" dir="ltr">(.+?)</a>  » <a href="forum\.dml\?id=([0-9]+)">(.+?)</a></p>
 </div>'''
 	metadata = re.search(metadata_regex, page)
