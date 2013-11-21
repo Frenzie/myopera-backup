@@ -30,6 +30,7 @@ counter = config.getint('DEFAULT', 'counter')
 credentials = user, password
 
 # Read counter file to resume from last time.
+#counter = 1
 #counter = 111 # regular old public forum
 #test for HTML entity parsing
 #counter = 14782702
@@ -38,8 +39,10 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
+counter_range = counter + 100000
+#counter_range = counter+2
+
 def getCommentFileName(comment_id_int):
-	###################
 	# Directory generation here so we can check if file exists; if it does, SKIP one iteration.
 	# There are almost 15 million posts, so let's divide the top level per 100,000; that'll give us 150 directories
 	# We can then do another level per 1000
@@ -90,7 +93,7 @@ def wait():
 
 # start for loop here, from counter up to ???
 # just three files for a first test
-for comment_id_int in range(counter, counter + 100000):
+for comment_id_int in range(counter, counter_range):
 	# we need a string for concatenating
 	comment_id = str(comment_id_int)
 	
@@ -110,11 +113,12 @@ for comment_id_int in range(counter, counter + 100000):
 	# No authorization required
 	page_request = requests.get('http://my.opera.com/community/forums/findpost.pl?id='+comment_id, auth=credentials)
 	
-	# Skip this iteration if the comment doesn't exist
+	# Skip this iteration if the comment doesn't exist or if authorization is required
 	if page_request.ok is False:
-		print('Skipping '+comment_id+'. Does not exist on server.')
+		message = comment_id + ' skipped. ' + page_request.reason
+		print(message)
 		# Write failure to log file.
-		log(comment_id + ' skipped. Does not exist on server.')
+		log(message)
 		continue
 
 	# We need the location
@@ -122,12 +126,11 @@ for comment_id_int in range(counter, counter + 100000):
 	# and also the page data
 	page = page_request.text
 
-	# Grab all the relevant metadata.
+	# Grab all the relevant metadata from the URL.
 	topic_id = re.search(r'id=([0-9]+)', location).group(1)
 
 	#print(location)
 	#print(topic_id)
-	#print(comment_id)
 
 	metadata_regex = r'''
 <h1>(.+?)</h1>
@@ -156,62 +159,70 @@ for comment_id_int in range(counter, counter + 100000):
 <p class="userposts">Posts: <a href=".+?">[0-9]+</a></p>
 </div>
 <div class="thepost">((?:\n)?.+?(?:<div class="forumpoll">.+?</div>)?)(?:<div class="sig">(.+?)
-</div>)?
-</div>'''
-
-#<div class="thepost">((?:\n)?.+?)</?div(?: class="sig">(.+?)</div>)?
+</div>)?(?:\n)?</div>'''
+	
+	# re.DOTALL makes dot also match newlines
 	comments = re.findall(comments_regex, page, re.DOTALL)
 	
 	###############
 	# enter individual comments for loop
-	#timestamp = re.search(r't=([0-9]+)', location).group(1)
-	# re.DOTALL makes dot also match newlines
+	for comment in comments:
+		comment_id = comment[0]
+		timestamp = comment[1]
+		edited = comment[2]
+		user_status = comment[3]
+		user = comment[4]
+		signature = comment[6]
+		post_text = comment[5]
+		
+		# These next few lines are duplicated; oh noez! We could make it a
+		# function or something.
+		comment_file_name = getCommentFileName(int(comment_id))
+		
+		# Skip this iteration if the comment was already written
+		if os.path.exists(comment_file_name):
+			print('Skipping '+comment_id+'. File exists.')
+			continue
+		
+		# write post file
+		# format something simple and logical, e.g.
+		'''
+		comment_id
+		timestamp
+		edited
+		user
+		user_status
+		signature
+		forum_category
+		forum_category_id
+		forum_name
+		forum_id
+		topic_title
+		topic_id
 	
-
-	user = post.group(1)
-	post_text = post.group(2)
-	
-
-	#print(user)
-	#print(post_text)
-	
-
-	
-	# write post file
-	# format something simple and logical, e.g.
-	'''
-	comment_id
-	user
-	timestamp
-	edited
-	forum_category
-	forum_category_id
-	forum_name
-	forum_id
-	topic_title
-	topic_id
-
-	post_text
-	'''
-	# in this format line 1 is user name, line 2 is comment id, etc. line 10 (or whatever) and all following is the comment
-	
-	#write post backup file
-	comment_file = open(comment_file_name, 'w')
-	
-	comment_file.write(comment_id + '\n')
-	comment_file.write(user + '\n')
-	comment_file.write(timestamp + '\n')
-	comment_file.write(edited + '\n')
-	comment_file.write(forum_category + '\n')
-	comment_file.write(forum_category_id + '\n')
-	comment_file.write(forum_name + '\n')
-	comment_file.write(forum_id + '\n')
-	comment_file.write(topic_title + '\n')
-	comment_file.write(topic_id + '\n')
-	comment_file.write('\n')
-	comment_file.write(post_text)
-	
-	comment_file.close() 
+		post_text
+		'''
+		# in this format line 1 is user name, line 2 is comment id, etc. line 10 (or whatever) and all following is the comment
+		
+		#write post backup file
+		comment_file = open(comment_file_name, 'w')
+		
+		comment_file.write(comment_id + '\n')
+		comment_file.write(timestamp + '\n')
+		comment_file.write(edited + '\n')
+		comment_file.write(user + '\n')
+		comment_file.write(user_status + '\n')
+		comment_file.write(signature + '\n')
+		comment_file.write(forum_category + '\n')
+		comment_file.write(forum_category_id + '\n')
+		comment_file.write(forum_name + '\n')
+		comment_file.write(forum_id + '\n')
+		comment_file.write(topic_title + '\n')
+		comment_file.write(topic_id + '\n')
+		comment_file.write('\n')
+		comment_file.write(post_text)
+		
+		comment_file.close()
 	
 	########
 	#exit for loop
