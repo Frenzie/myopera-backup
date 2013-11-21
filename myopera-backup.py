@@ -158,8 +158,7 @@ for comment_id_int in range(counter, counter_range):
 <p>.*?</p>
 <p class="userposts">Posts: <a href=".+?">[0-9]+</a></p>
 </div>
-<div class="thepost">((?:\n)?.+?(?:<div class="forumpoll">.+?</div>)?)(?:<div class="sig">(.+?)
-</div>)?(?:\n)?</div>'''
+<div class="thepost">((?:\n)?.+?(?:<div class="forumpoll">.+?</div>)?)(?:<div class="sig">(.+?)(?:\n)?</div>)?(?:\n)?</div>'''
 	
 	# re.DOTALL makes dot also match newlines
 	comments = re.findall(comments_regex, page, re.DOTALL)
