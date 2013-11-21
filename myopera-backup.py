@@ -38,27 +38,7 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
-def log(message):
-	logfile = open('myopera-backup.log', 'a') #a for append
-	logfile.write(message + '\n')
-	logfile.close()
-	
-# Shortcut for sleep
-# We don't want to get banned from the server, but we also don't want to take forever. 0.2 is probably too little but let's give it a try
-def wait():
-	time.sleep(0.2)
-
-# start for loop here, from counter up to ???
-# just three files for a first test
-for comment_id_int in range(counter, counter + 100000):
-	# we need a string for concatenating
-	comment_id = str(comment_id_int)
-	
-	print('Processing comment '+comment_id+'.')
-	
-	# Let's not be too hasty after the last request
-	wait()
-
+def getCommentFileName(comment_id_int):
 	###################
 	# Directory generation here so we can check if file exists; if it does, SKIP one iteration.
 	# There are almost 15 million posts, so let's divide the top level per 100,000; that'll give us 150 directories
@@ -94,6 +74,32 @@ for comment_id_int in range(counter, counter + 100000):
 		os.mkdir(thousands_dir)
 
 	comment_file_name = thousands_dir + '/' + comment_id+'.txt'
+	
+	return comment_file_name
+
+def log(message):
+	logfile = open('myopera-backup.log', 'a') #a for append
+	logfile.write(message + '\n')
+	logfile.close()
+	
+# Shortcut for sleep
+# We don't want to get banned from the server, but we also don't want to take forever. 0.2 is probably too little but let's give it a try
+def wait():
+	return
+	#time.sleep(0.2)
+
+# start for loop here, from counter up to ???
+# just three files for a first test
+for comment_id_int in range(counter, counter + 100000):
+	# we need a string for concatenating
+	comment_id = str(comment_id_int)
+	
+	print('Processing comment '+comment_id+'.')
+	
+	# Let's not be too hasty after the last request
+	wait()
+
+	comment_file_name = getCommentFileName(comment_id_int)
 
 	# Skip this iteration if the comment was already downloaded
 	if os.path.exists(comment_file_name):
@@ -102,93 +108,74 @@ for comment_id_int in range(counter, counter + 100000):
 
 	# Only get headers
 	# No authorization required
-	header_request = requests.head('http://my.opera.com/community/forums/findpost.pl?id='+comment_id)
+	page_request = requests.get('http://my.opera.com/community/forums/findpost.pl?id='+comment_id, auth=credentials)
 	
 	# Skip this iteration if the comment doesn't exist
-	if header_request.ok is False:
+	if page_request.ok is False:
 		print('Skipping '+comment_id+'. Does not exist on server.')
 		# Write failure to log file.
 		log(comment_id + ' skipped. Does not exist on server.')
 		continue
 
-	# findpost.pl redirects, find out where
-	location = header_request.headers['location']
+	# We need the location
+	location = page_request.url
+	# and also the page data
+	page = page_request.text
 
 	# Grab all the relevant metadata.
 	topic_id = re.search(r'id=([0-9]+)', location).group(1)
-	timestamp = re.search(r't=([0-9]+)', location).group(1)
 
 	#print(location)
 	#print(topic_id)
 	#print(comment_id)
-	#print(timestamp)
 
-	wait()
-
-	# Construct quote URL
-	quote_request_url = 'http://my.opera.com/community/forums/reply.dml?action=quote&commentid='+comment_id+'&id='+topic_id
-	#print(quote_request_url)
-
-	quote_request = requests.get(quote_request_url, auth=credentials)
-
-	# True if HTTP status 200; False for e.g. 401 or 404. Maybe check actual error codes and raise an alarm if it's not 401 or 404? Or write some kind of error log under else?
-	# Anyhoo, skip this iteration if False, because then we don't have read access.
-	if quote_request.ok is False:
-		print('Skipping '+comment_id+'. Authorization or other problem.')
-		# Write failure to log file.
-		log(comment_id + ' skipped. Authorization or other problem.')
-		continue
-	
-	quote_page = quote_request.text
-	#print(quote_page)
-	
-	metadata = re.search(r'<div id="forumnav"><p class="forumnav"><a href="/[\w]+/forums/">Forums</a>  » <a href="forum\.dml\?id=([0-9]+)">(.+?)</a> » <a href="topic\.dml\?id=[0-9]+">(.+?)</a>', quote_page)
+	metadata_regex = r'''
+<h1>(.+?)</h1>
+<p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a href="/community/forums/tgr.dml\?id=([0-9]+)" dir="ltr">(.+?)</a>  » <a href="forum\.dml\?id=([0-9]+)">(.+?)</a></p>
+</div>'''
+	metadata = re.search(metadata_regex, page)
 	
 	#print(metadata.group(0))
-	forum_id = metadata.group(1)
-	forum_name = metadata.group(2)
-	topic_title = metadata.group(3)
+	forum_category_id = metadata.group(2)
+	forum_category = metadata.group(3)
+	forum_id = metadata.group(4)
+	forum_name = metadata.group(5)
+	topic_title = metadata.group(1)
 	#print(forum_id)
 	#print(forum_name)
 	#print(topic_title)
 	
+	#not working yet…
+	comments_regex = r'''
+<div class="fpost.*?" id=".+?">
+<a name="comment[0-9]+"></a><p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post"> (.+?)</a>(?: <b>\((edited)\)</b>)?</p>
+<div class="pad">
+<div class="poster">
+(?:<img src=".+?" width="72" height="29" alt="(.+?)" title=".+?" class="right">)?<a href=".+?"><img src=".+?" alt="" class="forumavatar"></a><p><b><a href=".+?"(?: title=".+?")?>(.+?)</a></b></p>
+<p>.*?</p>
+<p class="userposts">Posts: <a href=".+?">[0-9]+</a></p>
+</div>
+<div class="thepost">((?:\n)?.+?(?:<div class="forumpoll">.+?</div>)?)(?:<div class="sig">(.+?)
+</div>)?
+</div>'''
+
+#<div class="thepost">((?:\n)?.+?)</?div(?: class="sig">(.+?)</div>)?
+	comments = re.findall(comments_regex, page, re.DOTALL)
+	
+	###############
+	# enter individual comments for loop
+	#timestamp = re.search(r't=([0-9]+)', location).group(1)
 	# re.DOTALL makes dot also match newlines
-	post = re.search(r'<textarea name="comment" id="postcontent" rows="20" cols="60">\[quote=(.+?)](.+?)\[/quote] </textarea>', quote_page, re.DOTALL)
 	
-	post_missing = re.search(r'<textarea name="comment" id="postcontent" rows="20" cols="60"></textarea>', quote_page, re.DOTALL)
-	
-	if post is None and post_missing:
-		print('Skipping '+comment_id+'. Quoting malfunctioned on server.')
-		# Write failure to log file.
-		log(comment_id + ' skipped. Quoting problem on server.')
-		continue
-	
+
 	user = post.group(1)
 	post_text = post.group(2)
 	
-	# Decode HTML entities
-	# Thanks to http://stackoverflow.com/a/2087433
-	import html.parser
-	h = html.parser.HTMLParser()
-	post_text = h.unescape(post_text)
-	
+
 	#print(user)
 	#print(post_text)
 	
-	#################
-	#we're still missing the forum category; grab it using the topic id or forum id
-	#forum_id with perscreen=1 is most likely the smallest
-	category_request_url = 'http://my.opera.com/community/forums/forum.dml?id='+forum_id+'&perscreen=1'
-	category_request = requests.get(category_request_url, auth=credentials)
-	
-	metadata = re.search(r'<p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a href="/community/forums/tgr.dml\?id=([0-9]+)" dir="ltr">(.+?)</a>', category_request.text)
-	
-	forum_category_id = metadata.group(1)
-	forum_category = metadata.group(2)
-	
-	#print(forum_category_id)
-	#print(forum_category)
-	
+
 	
 	# write post file
 	# format something simple and logical, e.g.
@@ -196,6 +183,7 @@ for comment_id_int in range(counter, counter + 100000):
 	comment_id
 	user
 	timestamp
+	edited
 	forum_category
 	forum_category_id
 	forum_name
@@ -213,6 +201,7 @@ for comment_id_int in range(counter, counter + 100000):
 	comment_file.write(comment_id + '\n')
 	comment_file.write(user + '\n')
 	comment_file.write(timestamp + '\n')
+	comment_file.write(edited + '\n')
 	comment_file.write(forum_category + '\n')
 	comment_file.write(forum_category_id + '\n')
 	comment_file.write(forum_name + '\n')
@@ -224,6 +213,8 @@ for comment_id_int in range(counter, counter + 100000):
 	
 	comment_file.close() 
 	
+	########
+	#exit for loop
 	# write counter file
 	comment_id_int += 1 #need to start from one higher next time
 	comment_id = str(comment_id_int)
