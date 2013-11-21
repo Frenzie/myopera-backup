@@ -59,7 +59,7 @@ def getCommentFileName(comment_id_int):
 
 	hundred_thousands_dir = backup_directory + '/' + str(hundred_thousands)+'-'+str(hundred_thousands_next)
 
-	thousands = math.floor( (comment_id_int - hundred_thousands) / 1000 )
+	thousands = math.floor( (comment_id_int) / 1000 )
 	thousands_next = thousands + 1
 	thousands *= 1000
 	thousands_next *= 1000
