@@ -41,8 +41,9 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
+counter_range = 14000000
 #counter_range = counter + 14000000
-counter_range = counter+2
+#counter_range = counter+2
 
 def getCommentFileName(comment_id_int):
 	# Directory generation here so we can check if file exists; if it does, SKIP one iteration.
@@ -88,6 +89,14 @@ def log(message):
 	logfile.close()
 	print(message)
 	
+def skipped(comment_id):
+	output = False
+	with open(log_file, 'r') as f:
+		for line in f:
+			if line.startswith(comment_id + ' skipped'):
+				output = line[:-1] #minus the last character, although I'd think the newline \n was two
+	return output
+
 # Shortcut for sleep
 # We don't want to get banned from the server, but we also don't want to take forever. 0.2 is probably too little but let's give it a try
 def wait():
@@ -120,11 +129,10 @@ for comment_id_int in range(counter, counter_range):
 		continue
 	
 	# Skip this iteration if the comment was already skipped earlier for some reason.
-	with open(log_file, 'r') as f:
-		for line in f:
-			if line.startswith(comment_id + ' skipped'):
-				print(line)
-				continue
+	skipped_before = skipped(comment_id)
+	if skipped_before:
+		print(skipped_before)
+		continue
 
 	# Only get headers
 	# No authorization required
