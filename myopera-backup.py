@@ -90,12 +90,11 @@ def log(message):
 	print(message)
 	
 def skipped(comment_id):
-	output = False
 	with open(log_file, 'r') as f:
 		for line in f:
 			if line.startswith(comment_id + ' skipped'):
-				output = line[:-1] #minus the last character, although I'd think the newline \n was two
-	return output
+				return line[:-1] #minus the last character, although I'd think the newline \n was two
+	return False
 
 # Shortcut for sleep
 # We don't want to get banned from the server, but we also don't want to take forever. 0.2 is probably too little but let's give it a try
