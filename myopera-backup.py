@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from bs4 import BeautifulSoup
 import configparser
 import os
 import re
@@ -18,6 +19,7 @@ counter=1
 '''
 #or maybe make user/pass optional and start at 1 if nothing found…
 config_file = 'myopera-backup.ini'
+log_file = 'myopera-backup.log'
 backup_directory = 'backup-data'
 
 config = configparser.ConfigParser()
@@ -39,8 +41,8 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
-counter_range = counter + 14000000
-#counter_range = counter+2
+#counter_range = counter + 14000000
+counter_range = counter+2
 
 def getCommentFileName(comment_id_int):
 	# Directory generation here so we can check if file exists; if it does, SKIP one iteration.
@@ -81,15 +83,23 @@ def getCommentFileName(comment_id_int):
 	return comment_file_name
 
 def log(message):
-	logfile = open('myopera-backup.log', 'a') #a for append
+	logfile = open(log_file, 'a') #a for append
 	logfile.write(message + '\n')
 	logfile.close()
+	print(message)
 	
 # Shortcut for sleep
 # We don't want to get banned from the server, but we also don't want to take forever. 0.2 is probably too little but let's give it a try
 def wait():
 	return
 	#time.sleep(0.2)
+
+# From http://stackoverflow.com/q/1034573
+def xstr(s):
+	if s is None:
+		return ''
+	else:
+		return str(s)
 
 # start for loop here, from counter up to ???
 # just three files for a first test
@@ -108,6 +118,13 @@ for comment_id_int in range(counter, counter_range):
 	if os.path.exists(comment_file_name):
 		print('Skipping '+comment_id+'. File exists.')
 		continue
+	
+	# Skip this iteration if the comment was already skipped earlier for some reason.
+	with open(log_file, 'r') as f:
+		for line in f:
+			if line.startswith(comment_id + ' skipped'):
+				print(line)
+				continue
 
 	# Only get headers
 	# No authorization required
@@ -116,7 +133,6 @@ for comment_id_int in range(counter, counter_range):
 	# Skip this iteration if the comment doesn't exist or if authorization is required
 	if page_request.ok is False:
 		message = comment_id + ' skipped. ' + page_request.reason
-		print(message)
 		# Write failure to log file.
 		log(message)
 		continue
@@ -125,6 +141,8 @@ for comment_id_int in range(counter, counter_range):
 	location = page_request.url
 	# and also the page data
 	page = page_request.text
+	# Time to parse it.
+	soup = BeautifulSoup(page)
 
 	# Grab all the relevant metadata from the URL.
 	topic_id = re.search(r'id=([0-9]+)', location).group(1)
@@ -132,11 +150,22 @@ for comment_id_int in range(counter, counter_range):
 	#print(location)
 	#print(topic_id)
 
+	metadata_html = soup.find('div', id='forumnav')
+	metadata_html = str(metadata_html)
+	
+	# Skip this iteration if MyOpera messed up and the topic doesn't exist yet doesn't return not found.
+	if not metadata_html:
+		message = comment_id + ' skipped. Empty Topic'
+		# Write failure to log file.
+		log(message)
+		continue
+	
 	metadata_regex = r'''
 <h1>(.*?)</h1>
-<p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a href="/community/forums/tgr.dml\?id=([0-9]+)" dir="ltr">(.+?)</a>  » <a href="forum\.dml\?id=([0-9]+)">(.+?)</a></p>
+<p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a dir="ltr" href="/community/forums/tgr.dml\?id=([0-9]+)">(.+?)</a>  » <a href="forum\.dml\?id=([0-9]+)">(.+?)</a></p>
 </div>'''
-	metadata = re.search(metadata_regex, page)
+	
+	metadata = re.search(metadata_regex, metadata_html)
 	
 	#print(metadata.group(0))
 	forum_category_id = metadata.group(2)
@@ -148,31 +177,31 @@ for comment_id_int in range(counter, counter_range):
 	#print(forum_name)
 	#print(topic_title)
 	
-	#not working yet…
-	comments_regex = r'''
-<div class="fpost.*?" id=".+?">
-<a name="comment[0-9]+"></a><p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post"> (.+?)</a>(?: <b>\((edited)\)</b>)?</p>
-<div class="pad">
-<div class="poster">
-(?:<img src=".+?" width="72" height="29" alt="(.+?)" title=".+?" class="right">)?<a href=".+?"><img src=".+?" alt="" class="forumavatar"></a><p><b><a href=".+?"(?: title=".+?")?>(.+?)</a></b></p>
-<p>.*?</p>
-<p class="userposts">Posts: <a href=".+?">[0-9]+</a></p>
-</div>
-<div class="thepost">((?:\n)?.+?(?:<div class="forumpoll">.+?</div>)?)(?:<div class="sig">(.+?)(?:\n)?</div>)?(?:\n)?</div>'''
-	
-	# re.DOTALL makes dot also match newlines
-	comments = re.findall(comments_regex, page, re.DOTALL)
+	comments = soup.findAll('div', 'fpost')
 	
 	###############
 	# enter individual comments for loop
 	for comment in comments:
-		comment_id = comment[0]
-		timestamp = comment[1]
-		edited = comment[2]
-		user_status = comment[3]
-		user = comment[4]
-		signature = comment[6]
-		post_text = comment[5]
+		post_html = str(comment)
+		
+		post_soup = BeautifulSoup(post_html)
+		
+		posted_html = post_soup.find('p', 'posted')
+		posted_html = str(posted_html)
+		
+		posted_regex = r'<p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post"> (.+?)</a>(?: <b>\((edited)\)</b>)?</p>'
+		posted_meta = re.search(posted_regex, posted_html)
+		
+		comment_id = posted_meta.group(1)
+		timestamp = posted_meta.group(2)
+		# Need empty string instead of None type if None
+		edited = xstr(posted_meta.group(3))
+		
+		for link in post_soup.findAll('a'):
+			if link.parent.name == 'b' and link.parent.parent.name == 'p' and link.parent.parent.parent.name == 'div' and link.parent.parent.parent.attrs == {'class': ['poster']}:
+				user_html = str(link)
+				user_regex = r'<a href=".+?"(?: title=".+?")?>(.+?)</a>'
+				user = re.search(user_regex, user_html).group(1)
 		
 		# These next few lines are duplicated; oh noez! We could make it a
 		# function or something.
@@ -190,8 +219,6 @@ for comment_id_int in range(counter, counter_range):
 		timestamp
 		edited
 		user
-		user_status
-		signature
 		forum_category
 		forum_category_id
 		forum_name
@@ -199,7 +226,7 @@ for comment_id_int in range(counter, counter_range):
 		topic_title
 		topic_id
 	
-		post_text
+		post_html
 		'''
 		# in this format line 1 is user name, line 2 is comment id, etc. line 10 (or whatever) and all following is the comment
 		
@@ -210,8 +237,6 @@ for comment_id_int in range(counter, counter_range):
 		comment_file.write(timestamp + '\n')
 		comment_file.write(edited + '\n')
 		comment_file.write(user + '\n')
-		comment_file.write(user_status + '\n')
-		comment_file.write(signature + '\n')
 		comment_file.write(forum_category + '\n')
 		comment_file.write(forum_category_id + '\n')
 		comment_file.write(forum_name + '\n')
@@ -219,7 +244,7 @@ for comment_id_int in range(counter, counter_range):
 		comment_file.write(topic_title + '\n')
 		comment_file.write(topic_id + '\n')
 		comment_file.write('\n')
-		comment_file.write(post_text)
+		comment_file.write(post_html)
 		
 		comment_file.close()
 	
