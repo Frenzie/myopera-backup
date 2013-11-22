@@ -158,11 +158,11 @@ for comment_id_int in range(counter, counter_range):
 	#print(location)
 	#print(topic_id)
 
-	metadata_html = soup.find('div', id='forumnav')
-	metadata_html = str(metadata_html)
+	metadata_soup = soup.find('div', id='forumnav')
+	metadata_html = str(metadata_soup)
 	
 	# Skip this iteration if MyOpera messed up and the topic doesn't exist yet doesn't return not found.
-	if not metadata_html:
+	if not metadata_soup:
 		message = comment_id + ' skipped. Empty Topic'
 		# Write failure to log file.
 		log(message)
