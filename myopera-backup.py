@@ -196,7 +196,7 @@ for comment_id_int in range(counter, counter_range):
 		posted_html = post_soup.find('p', 'posted')
 		posted_html = str(posted_html)
 		
-		posted_regex = r'<p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post">\s?(.+?)?</a>(?: <b>\((edited)\)</b>)?</p>'
+		posted_regex = r'<p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post">\s?(.*?)</a>(?: <b>\((edited)\)</b>)?</p>'
 		posted_meta = re.search(posted_regex, posted_html)
 		
 		comment_id = posted_meta.group(1)
@@ -208,8 +208,8 @@ for comment_id_int in range(counter, counter_range):
 		for link in post_soup.findAll('a'):
 			if link.parent.name == 'b' and link.parent.parent.name == 'p' and link.parent.parent.parent.name == 'div' and link.parent.parent.parent.attrs == {'class': ['poster']}:
 				user_html = str(link)
-				user_regex = r'<a href=".+?"(?: title=".+?")?>(.+?)</a>'
-				user = re.search(user_regex, user_html).group(1)
+				user_regex = r'<a href=".+?"(?: title=".+?")?>(.*?)</a>'
+				user = xstr(re.search(user_regex, user_html).group(1))
 		
 		# These next few lines are duplicated; oh noez! We could make it a
 		# function or something.
