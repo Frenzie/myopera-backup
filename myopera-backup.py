@@ -196,11 +196,12 @@ for comment_id_int in range(counter, counter_range):
 		posted_html = post_soup.find('p', 'posted')
 		posted_html = str(posted_html)
 		
-		posted_regex = r'<p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post"> (.+?)</a>(?: <b>\((edited)\)</b>)?</p>'
+		posted_regex = r'<p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post">\s?(.+?)?</a>(?: <b>\((edited)\)</b>)?</p>'
 		posted_meta = re.search(posted_regex, posted_html)
 		
 		comment_id = posted_meta.group(1)
-		timestamp = posted_meta.group(2)
+		# Needed for comment 1350280. Might there be more?
+		timestamp = xstr(posted_meta.group(2))
 		# Need empty string instead of None type if None
 		edited = xstr(posted_meta.group(3))
 		
