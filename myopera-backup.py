@@ -60,7 +60,7 @@ def getCommentFileName(comment_id_int):
 	hundred_thousands_next *= 100000
 	hundred_thousands_next -= 1
 
-	hundred_thousands_dir = backup_directory + '/' + str(hundred_thousands)+'-'+str(hundred_thousands_next)
+	hundred_thousands_dir = backup_directory + '/' + str(hundred_thousands).zfill(8) + '-'+str(hundred_thousands_next).zfill(8)
 
 	thousands = math.floor( (comment_id_int) / 1000 )
 	thousands_next = thousands + 1
@@ -68,7 +68,7 @@ def getCommentFileName(comment_id_int):
 	thousands_next *= 1000
 	thousands_next -= 1
 
-	thousands_dir = hundred_thousands_dir + '/' + str(thousands)+'-'+str(thousands_next)
+	thousands_dir = hundred_thousands_dir + '/' + str(thousands).zfill(8)+'-'+str(thousands_next).zfill(8)
 
 	if os.path.isdir(backup_directory) is False:
 		os.mkdir(backup_directory)
