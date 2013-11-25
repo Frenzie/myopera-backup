@@ -41,7 +41,8 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
-counter_range = 14000000
+#counter_range = 14000000
+counter_range = 1800000 #for Saddle Magic
 #counter_range = counter + 14000000
 #counter_range = counter+2
 
@@ -169,7 +170,7 @@ for comment_id_int in range(counter, counter_range):
 	
 	metadata_regex = r'''
 <h1>(.*?)</h1>
-<p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a dir="ltr" href="/community/forums/tgr.dml\?id=([0-9]+)">(.*?)</a>  » <a href="forum\.dml\?id=([0-9]+)">(.+?)</a></p>
+<p class="forumnav"><a href="/[\w]+/forums/">Forums</a>   » <a dir="ltr" href="/community/forums/tgr.dml\?id=([0-9]+)">(.*?)</a>  » <a href="forum\.dml\?id=([0-9]+)">(.*?)</a></p>
 </div>'''
 	
 	metadata = re.search(metadata_regex, metadata_html)
@@ -178,7 +179,7 @@ for comment_id_int in range(counter, counter_range):
 	forum_category_id = metadata.group(2)
 	forum_category = xstr(metadata.group(3))
 	forum_id = metadata.group(4)
-	forum_name = metadata.group(5)
+	forum_name = xstr(metadata.group(5))
 	topic_title = metadata.group(1)
 	#print(forum_id)
 	#print(forum_name)
@@ -223,6 +224,10 @@ for comment_id_int in range(counter, counter_range):
 		# Write log if forum_category is missing
 		if forum_category is '':
 			log(comment_id + ' malfunction. Missing forum_category')
+		
+		# Write log if forum_name is missing
+		if forum_name is '':
+			log(comment_id + ' malfunction. Missing forum_name')
 		
 		# write post file
 		# format something simple and logical, e.g.
