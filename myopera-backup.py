@@ -41,7 +41,7 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
-counter_range = 14000000
+counter_range = 15000000
 #counter_range = counter + 14000000
 #counter_range = counter+2
 
@@ -195,6 +195,7 @@ for comment_id_int in range(counter, counter_range):
 		
 		posted_html = post_soup.find('p', 'posted')
 		posted_html = str(posted_html)
+		#print(posted_html)
 		
 		posted_regex = r'<p class="posted">(?:<span class="unread">unread</span>)?<a href="findpost\.pl\?id=([0-9]+)" title="permanent link to post">\s?(.*?)</a>(?: <b>\((edited)\)</b>)?</p>'
 		posted_meta = re.search(posted_regex, posted_html)
