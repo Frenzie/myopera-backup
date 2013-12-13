@@ -117,6 +117,10 @@ for comment_id_int in range(counter, counter_range):
 	
 	print('Processing comment '+comment_id+'.')
 	
+	if comment_id_int > 3184000 and comment_id[-1] != '1' and comment_id[-1] != '2':
+		print('Skipping '+comment_id+'. Higher than 3184000 and does not end in 1 or 2.')
+		continue
+	
 	# Let's not be too hasty after the last request
 	wait()
 
