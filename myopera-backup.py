@@ -132,10 +132,12 @@ for comment_id_int in range(counter, counter_range):
 		continue
 	
 	# Skip this iteration if the comment was already skipped earlier for some reason.
+	'''
 	skipped_before = skipped(comment_id)
 	if skipped_before:
 		print(skipped_before)
 		continue
+	'''
 
 	# Only get headers
 	# No authorization required
