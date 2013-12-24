@@ -41,7 +41,7 @@ credentials = user, password
 #test for comment that does not exist
 #counter = 14951903
 
-counter_range = 15000000
+counter_range = 18000000
 #counter_range = counter + 14000000
 #counter_range = counter+2
 
@@ -117,8 +117,17 @@ for comment_id_int in range(counter, counter_range):
 	
 	print('Processing comment '+comment_id+'.')
 	
+	# search using e.g. 3[1-9]????[^2].txt, [4-9]?????[^2].txt or 1??????[^2].txt
+	# 3183449 seems to be the last number where it's all sequential
+	# from 3183449 to to 5600000 it's all 1s
+	# from 8500000 to 8900000 there's a bunch of 1s.
+	# also a bunch in the 13000000s
 	if comment_id_int > 3184000 and comment_id[-1] != '1' and comment_id[-1] != '2':
 		print('Skipping '+comment_id+'. Higher than 3184000 and does not end in 1 or 2.')
+		continue
+	
+	if comment_id_int > 14000000 and and comment_id[-1] != '2':
+		print('Skipping '+comment_id+'. Higher than 14000000 and does not end in 2.')
 		continue
 	
 	# Let's not be too hasty after the last request
