@@ -126,7 +126,7 @@ for comment_id_int in range(counter, counter_range):
 		print('Skipping '+comment_id+'. Higher than 3184000 and does not end in 1 or 2.')
 		continue
 	
-	if comment_id_int > 14000000 and and comment_id[-1] != '2':
+	if comment_id_int > 14000000 and comment_id[-1] != '2':
 		print('Skipping '+comment_id+'. Higher than 14000000 and does not end in 2.')
 		continue
 	
